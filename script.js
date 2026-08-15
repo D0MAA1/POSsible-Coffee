@@ -68,8 +68,8 @@ const menu = [
 ];
 
 const copy = {
-  en: { eyebrow: "OUR MENU", heading: "Made for your moment.", previous: "Previous", next: "Next", page: "Page", of: "of", footer: "Good things, simply made.", switch: "العربية", dark: "Dark", light: "Light" },
-  ar: { eyebrow: "قائمتنا", heading: "صُنعت للحظتك.", previous: "السابق", next: "التالي", page: "صفحة", of: "من", footer: "أشياء جميلة، ببساطة.", switch: "English", dark: "داكن", light: "فاتح" }
+  en: { eyebrow: "OUR MENU", heading: "Made for your moment.", previous: "Previous", next: "Next", page: "Page", of: "of", footer: "All rights reserved.", switch: "العربية", dark: "Dark", light: "Light" },
+  ar: { eyebrow: "قائمتنا", heading: "صُنعت للحظتك.", previous: "السابق", next: "التالي", page: "صفحة", of: "من", footer: "جميع الحقوق محفوظة.", switch: "English", dark: "داكن", light: "فاتح" }
 };
 
 // These food photographs are used as subtle card backgrounds. Replace URLs here if desired.
@@ -140,7 +140,7 @@ document.querySelector("#language-toggle").addEventListener("click", () => {
   document.querySelector("#previous-label").textContent = text.previous;
   document.querySelector("#next-label").textContent = text.next;
   document.querySelector("#theme-label").textContent = document.body.classList.contains("dark") ? text.light : text.dark;
-  document.querySelector("footer").innerHTML = `POSsible Coffee <span>·</span> ${text.footer}`;
+  document.querySelector("footer").innerHTML = `© <span id="copyright-year">${new Date().getFullYear()}</span> POSsible. <span class="footer-divider">·</span> ${text.footer}`;
   render();
 });
 
@@ -152,5 +152,27 @@ document.querySelector("#theme-toggle").addEventListener("click", () => {
   document.querySelector("#theme-toggle").setAttribute("aria-label", enabled ? "Enable light mode" : "Enable dark mode");
 });
 
+// Swipe across the menu book to turn pages; vertical scrolling remains untouched.
+let swipeStartX = null;
+let swipeStartY = null;
+book.addEventListener("pointerdown", (event) => {
+  if (!event.isPrimary) return;
+  swipeStartX = event.clientX;
+  swipeStartY = event.clientY;
+  book.setPointerCapture?.(event.pointerId);
+});
+book.addEventListener("pointerup", (event) => {
+  if (swipeStartX === null) return;
+  const horizontalDistance = event.clientX - swipeStartX;
+  const verticalDistance = event.clientY - swipeStartY;
+  if (Math.abs(horizontalDistance) > 55 && Math.abs(horizontalDistance) > Math.abs(verticalDistance)) {
+    changePage(horizontalDistance < 0 ? 1 : -1);
+  }
+  swipeStartX = null;
+  swipeStartY = null;
+});
+book.addEventListener("pointercancel", () => { swipeStartX = null; swipeStartY = null; });
+
 compactView.addEventListener("change", () => { spread = 0; render(); });
+document.querySelector("#copyright-year").textContent = new Date().getFullYear();
 render();
