@@ -140,7 +140,7 @@ document.querySelector("#language-toggle").addEventListener("click", () => {
   document.querySelector("#previous-label").textContent = text.previous;
   document.querySelector("#next-label").textContent = text.next;
   document.querySelector("#theme-label").textContent = document.body.classList.contains("dark") ? text.light : text.dark;
-  document.querySelector("footer").innerHTML = `© <span id="copyright-year">${new Date().getFullYear()}</span> POSsible. <span class="footer-divider">·</span> ${text.footer}`;
+  document.querySelector("#footer-rights").textContent = text.footer;
   render();
 });
 

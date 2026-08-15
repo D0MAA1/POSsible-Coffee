@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#35251e" />
   <title>POSsible Coffee | Menu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -13,7 +13,7 @@
 <body>
   <header class="site-header">
     <a class="brand" href="#" aria-label="POSsible Coffee home">
-      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M10 18h25v12.2A9.8 9.8 0 0 1 25.2 40H19.8a9.8 9.8 0 0 1-9.8-9.8V18Z" fill="currentColor"/><path d="M35 22h2.2a6.8 6.8 0 1 1 0 13.6H34" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M15 12c0 2.3-2.2 2.8-2.2 5.2M23 12c0 2.3-2.2 2.8-2.2 5.2M31 12c0 2.3-2.2 2.8-2.2 5.2" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></span>
       <span>POS<span>sible</span> Coffee</span>
     </a>
     <div class="header-actions">
@@ -47,7 +47,18 @@
     </nav>
   </main>
 
-  <footer>© <span id="copyright-year"></span> POSsible. <span class="footer-divider">·</span> All rights reserved.</footer>
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand"><span class="footer-logo">P</span><strong>POS<span>sible</span></strong></div>
+      <div class="social-links" aria-label="POSsible social media">
+        <!-- Replace # with your real social-media profile links. -->
+        <a href="#" aria-label="Instagram">ig</a>
+        <a href="#" aria-label="Facebook">f</a>
+        <a href="#" aria-label="TikTok">♪</a>
+      </div>
+      <p>© <span id="copyright-year"></span> POSsible. <span class="footer-divider">·</span> <span id="footer-rights">All rights reserved.</span></p>
+    </div>
+  </footer>
   <script src="script.js"></script>
 </body>
 </html>
