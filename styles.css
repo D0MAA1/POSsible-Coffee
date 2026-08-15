@@ -13,7 +13,7 @@ body.dark { --ink:#edf7f4;--muted:#a4bab5;--paper:#102724;--line:#31534d;--body:
 /* POSsible Pizza header and footer proportions */
 .site-header { border:0!important; box-shadow:none!important; min-height:92px; }
 .dark .site-header { border:0!important; }
-.brand { font-size:1.05rem; letter-spacing:-.06em; }
+.brand { font-size:2rem; letter-spacing:-.06em; }
 .footer-logo { display:block; width:31px; height:31px; margin:0!important; background:none; clip-path:none; }
 @media(max-width:680px) { .site-header { min-height:calc(74px + env(safe-area-inset-top)); } .brand { font-size:1rem; } }
 
