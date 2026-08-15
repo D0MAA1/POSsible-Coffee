@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#35251e" />
+  <title>POSsible Coffee | Menu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="POSsible Coffee home">
+      <span class="brand-mark" aria-hidden="true">P</span>
+      <span>POS<span>sible</span> Coffee</span>
+    </a>
+    <div class="header-actions">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Enable dark mode"><span aria-hidden="true">☾</span><span id="theme-label">Dark</span></button>
+      <button class="language-toggle" id="language-toggle" type="button" aria-label="Switch to Arabic">العربية</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="menu-intro" aria-labelledby="menu-heading">
+      <p class="eyebrow" id="menu-subtitle">OUR MENU</p>
+      <h1 id="menu-heading">Made for your moment.</h1>
+    </section>
+
+    <section class="book-shell" aria-label="POSsible Coffee menu book">
+      <div class="book" id="book">
+        <article class="menu-page menu-page--left" id="page-left"></article>
+        <div class="book-spine" aria-hidden="true"></div>
+        <article class="menu-page menu-page--right" id="page-right"></article>
+      </div>
+    </section>
+
+    <nav class="book-controls" aria-label="Menu page navigation">
+      <button class="nav-button" id="previous" type="button" aria-label="Previous pages">
+        <span aria-hidden="true">←</span><span id="previous-label">Previous</span>
+      </button>
+      <p class="page-indicator" id="page-indicator" aria-live="polite"></p>
+      <button class="nav-button nav-button--next" id="next" type="button" aria-label="Next pages">
+        <span id="next-label">Next</span><span aria-hidden="true">→</span>
+      </button>
+    </nav>
+  </main>
+
+  <footer>POSsible Coffee <span>·</span> Good things, simply made.</footer>
+  <script src="script.js"></script>
+</body>
+</html>
