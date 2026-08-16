@@ -195,7 +195,7 @@ function cartCopy() {
 }
 
 function getProductById(id) {
-  const match = /^menu-(\\d+)-(\\d+)$/.exec(id);
+  const match = /^menu-(\d+)-(\d+)$/.exec(id);
   if (!match) return null;
   const categoryIndex = Number(match[1]) - 1;
   const itemIndex = Number(match[2]) - 1;
@@ -338,7 +338,7 @@ function generateWhatsAppMessage(formData) {
   const orderLines = cart.map((item) => {
     const product = getProductById(item.id);
     return item.quantity + "x " + productLabel(product) + " — " + formatPrice(product.price * item.quantity);
-  }).join("\\n");
+  }).join("\n");
   const details = [
     "New Order – " + restaurantConfig.name,
     "",
@@ -354,7 +354,7 @@ function generateWhatsAppMessage(formData) {
     "",
     text.total + ": " + formatPrice(calculateTotal())
   ];
-  return details.join("\\n");
+  return details.join("\n");
 }
 
 function submitOrder(event) {
