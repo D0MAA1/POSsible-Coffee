@@ -101,7 +101,7 @@ const compactView = window.matchMedia("(max-width: 680px)");
 
 function pageMarkup(category, number) {
   const data = category[language];
-  return '<p class="category-number">' + String(number).padStart(2, "0") + '</p><h2 class="category-title">' + data.title + '</h2><div class="items">' + data.items.map(([name, price, description], itemIndex) => { const id = "menu-" + number + "-" + (itemIndex + 1); return '<div class="item" style="--item-image:url(' + itemImages[(number + itemIndex - 1) % itemImages.length] + ')"><strong class="item-name">' + name + '</strong><span class="item-price">' + price + '</span><p class="item-description">' + description + '</p><button class="add-to-cart" type="button" data-product-id="' + id + '">' + cartCopy().add + '</button></div>'; }).join("") + '</div>';
+  return '<p class="category-number">' + String(number).padStart(2, "0") + '</p><h2 class="category-title">' + data.title + '</h2><div class="items">' + data.items.map(([name, price, description], itemIndex) => { const id = "menu-" + number + "-" + (itemIndex + 1); const quantity = cartQuantity(id); return '<div class="item" style="--item-image:url(' + itemImages[(number + itemIndex - 1) % itemImages.length] + ')"><strong class="item-name">' + name + '</strong><span class="item-price">' + price + '</span><p class="item-description">' + description + '</p><div class="product-controls" data-product-controls data-product-id="' + id + '"><button type="button" data-product-action="decrease" data-product-id="' + id + '" aria-label="Decrease quantity"' + (quantity === 0 ? ' disabled' : '') + '>&minus;</button><b data-product-quantity>' + quantity + '</b><button type="button" data-product-action="increase" data-product-id="' + id + '" aria-label="Add to cart">+</button></div></div>'; }).join("") + '</div>';
 }
 
 function render(animation = "") {
@@ -230,6 +230,19 @@ function formatPrice(price) {
   return price + " " + restaurantConfig.currency;
 }
 
+function cartQuantity(id) {
+  const item = cart.find((entry) => entry.id === id);
+  return item ? item.quantity : 0;
+}
+
+function updateProductControls() {
+  document.querySelectorAll("[data-product-controls]").forEach((controls) => {
+    const quantity = cartQuantity(controls.dataset.productId);
+    controls.querySelector("[data-product-quantity]").textContent = quantity;
+    controls.querySelector('[data-product-action="decrease"]').disabled = quantity === 0;
+  });
+}
+
 function addToCart(id) {
   const product = getProductById(id);
   if (!product) return;
@@ -274,6 +287,7 @@ function renderCart() {
   const badge = document.querySelector("#cart-badge");
   badge.textContent = count;
   badge.hidden = count === 0;
+  updateProductControls();
 }
 
 function updateCartInterface() {
@@ -377,9 +391,12 @@ function submitOrder(event) {
   renderCart();
 }
 
-book.addEventListener("click", (event) => {
-  const button = event.target.closest(".add-to-cart");
-  if (button) addToCart(button.dataset.productId);
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-product-action]");
+  if (!button) return;
+  event.preventDefault();
+  if (button.dataset.productAction === "increase") addToCart(button.dataset.productId);
+  if (button.dataset.productAction === "decrease") decreaseQuantity(button.dataset.productId);
 });
 document.querySelector("#cart-toggle").addEventListener("click", openCart);
 document.querySelectorAll("[data-cart-close]").forEach((element) => element.addEventListener("click", closeCart));
