@@ -91,6 +91,14 @@ const itemImages = [
   "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=900&q=80"
 ];
 
+const productImages = {
+  "menu-1-2": "https://images.unsplash.com/photo-1551030173-122aabc4489c?auto=format&fit=crop&w=900&q=80"
+};
+
+function imageForProduct(id, categoryIndex, itemIndex) {
+  return productImages[id] || itemImages[(categoryIndex + itemIndex) % itemImages.length];
+}
+
 let language = "en";
 let spread = 0;
 const pageLeft = document.querySelector("#page-left");
@@ -102,7 +110,7 @@ const compactView = window.matchMedia("(max-width: 680px)");
 
 function pageMarkup(category, number) {
   const data = category[language];
-  return '<p class="category-number">' + String(number).padStart(2, "0") + '</p><h2 class="category-title">' + data.title + '</h2><div class="items">' + data.items.map(([name, price, description], itemIndex) => { const id = "menu-" + number + "-" + (itemIndex + 1); const quantity = selectedQuantity(id); return '<div class="item" style="--item-image:url(' + itemImages[(number + itemIndex - 1) % itemImages.length] + ')"><strong class="item-name">' + name + '</strong><span class="item-price">' + price + '</span><p class="item-description">' + description + '</p><div class="product-actions"><div class="product-controls" data-product-controls data-product-id="' + id + '"><button type="button" data-product-action="decrease" data-product-id="' + id + '" aria-label="Decrease quantity"' + (quantity === 1 ? ' disabled' : '') + '>&minus;</button><b data-product-quantity>' + quantity + '</b><button type="button" data-product-action="increase" data-product-id="' + id + '" aria-label="Increase quantity">+</button></div><button type="button" class="add-to-cart" data-product-action="add" data-product-id="' + id + '">' + cartCopy().add + '</button></div></div>'; }).join("") + '</div>';
+  return '<p class="category-number">' + String(number).padStart(2, "0") + '</p><h2 class="category-title">' + data.title + '</h2><div class="items">' + data.items.map(([name, price, description], itemIndex) => { const id = "menu-" + number + "-" + (itemIndex + 1); const quantity = selectedQuantity(id); return '<div class="item" style="--item-image:url(' + imageForProduct(id, number - 1, itemIndex) + ')"><strong class="item-name">' + name + '</strong><span class="item-price">' + price + '</span><p class="item-description">' + description + '</p><div class="product-actions"><div class="product-controls" data-product-controls data-product-id="' + id + '"><button type="button" data-product-action="decrease" data-product-id="' + id + '" aria-label="Decrease quantity"' + (quantity === 1 ? ' disabled' : '') + '>&minus;</button><b data-product-quantity>' + quantity + '</b><button type="button" data-product-action="increase" data-product-id="' + id + '" aria-label="Increase quantity">+</button></div><button type="button" class="add-to-cart" data-product-action="add" data-product-id="' + id + '">' + cartCopy().add + '</button></div></div>'; }).join("") + '</div>';
 }
 
 function render(animation = "") {
@@ -203,7 +211,7 @@ function getProductById(id) {
   const itemIndex = Number(match[2]) - 1;
   const english = menu[categoryIndex] && menu[categoryIndex].en.items[itemIndex];
   if (!english) return null;
-  return { id, categoryIndex, itemIndex, price: Number.parseInt(english[1], 10), image: itemImages[(categoryIndex + itemIndex) % itemImages.length] };
+  return { id, categoryIndex, itemIndex, price: Number.parseInt(english[1], 10), image: imageForProduct(id, categoryIndex, itemIndex) };
 }
 
 function productLabel(product) {
