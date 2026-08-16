@@ -1,3 +1,12 @@
+// Restaurant settings: update these values when reusing this menu.
+const restaurantConfig = {
+  name: "POSsible Coffee",
+  whatsapp: "201026779104",
+  currency: "EGP",
+  storageKey: "possible-coffee-cart",
+  fields: { customerName: { required: true }, tableNumber: { required: true }, orderType: { required: true }, notes: { required: false } }
+};
+
 // Edit menu items, prices, and descriptions here.
 const menu = [
   { en: { title: "Coffee", items: [
@@ -92,7 +101,7 @@ const compactView = window.matchMedia("(max-width: 680px)");
 
 function pageMarkup(category, number) {
   const data = category[language];
-  return `<p class="category-number">${String(number).padStart(2, "0")}</p><h2 class="category-title">${data.title}</h2><div class="items">${data.items.map(([name, price, description], itemIndex) => `<div class="item" style="--item-image:url('${itemImages[(number + itemIndex - 1) % itemImages.length]}')"><strong class="item-name">${name}</strong><span class="item-price">${price}</span><p class="item-description">${description}</p></div>`).join("")}</div>`;
+  return '<p class="category-number">' + String(number).padStart(2, "0") + '</p><h2 class="category-title">' + data.title + '</h2><div class="items">' + data.items.map(([name, price, description], itemIndex) => { const id = "menu-" + number + "-" + (itemIndex + 1); return '<div class="item" style="--item-image:url(' + itemImages[(number + itemIndex - 1) % itemImages.length] + ')"><strong class="item-name">' + name + '</strong><span class="item-price">' + price + '</span><p class="item-description">' + description + '</p><button class="add-to-cart" type="button" data-product-id="' + id + '">' + cartCopy().add + '</button></div>'; }).join("") + '</div>';
 }
 
 function render(animation = "") {
@@ -139,15 +148,14 @@ document.querySelector("#language-toggle").addEventListener("click", () => {
   document.querySelector("#menu-heading").textContent = text.heading;
   document.querySelector("#previous-label").textContent = text.previous;
   document.querySelector("#next-label").textContent = text.next;
-  document.querySelector("#theme-label").textContent = document.body.classList.contains("dark") ? text.light : text.dark;
   document.querySelector("#footer-rights").textContent = text.footer;
   render();
+  updateCartInterface();
 });
 
 book.addEventListener("animationend", () => book.classList.remove("turn-forward", "turn-backward"));
 document.querySelector("#theme-toggle").addEventListener("click", () => {
   const enabled = document.body.classList.toggle("dark");
-  document.querySelector("#theme-label").textContent = enabled ? copy[language].light : copy[language].dark;
   document.querySelector("#theme-toggle").firstElementChild.textContent = enabled ? "☀" : "☾";
   document.querySelector("#theme-toggle").setAttribute("aria-label", enabled ? "Enable light mode" : "Enable dark mode");
 });
@@ -174,5 +182,218 @@ book.addEventListener("pointerup", (event) => {
 book.addEventListener("pointercancel", () => { swipeStartX = null; swipeStartY = null; });
 
 compactView.addEventListener("change", () => { spread = 0; render(); });
+
+// Cart and ordering are deliberately frontend-only, so this works on GitHub Pages.
+let cart = loadCart();
+const cartLayer = document.querySelector("#cart-layer");
+const checkoutLayer = document.querySelector("#checkout-layer");
+
+function cartCopy() {
+  return language === "ar"
+    ? { add: "أضف للسلة", cart: "السلة", empty: "سلتك فارغة.", subtotal: "الإجمالي الفرعي", checkout: "إتمام الطلب", complete: "أكمل طلبك", customer: "اسم العميل", table: "رقم الطاولة", orderType: "نوع الطلب", dineIn: "داخل المكان", takeaway: "تيك أواي", notes: "ملاحظات", summary: "ملخص الطلب", total: "الإجمالي", confirm: "تأكيد الطلب", remove: "حذف", required: "يرجى إكمال الحقول المطلوبة." }
+    : { add: "Add to Cart", cart: "Your cart", empty: "Your cart is empty.", subtotal: "Subtotal", checkout: "Checkout", complete: "Complete your order", customer: "Customer Name", table: "Table Number", orderType: "Order Type", dineIn: "Dine In", takeaway: "Takeaway", notes: "Notes", summary: "Order summary", total: "Total", confirm: "Confirm Order", remove: "Remove", required: "Please complete the required fields." };
+}
+
+function getProductById(id) {
+  const match = /^menu-(\\d+)-(\\d+)$/.exec(id);
+  if (!match) return null;
+  const categoryIndex = Number(match[1]) - 1;
+  const itemIndex = Number(match[2]) - 1;
+  const english = menu[categoryIndex] && menu[categoryIndex].en.items[itemIndex];
+  if (!english) return null;
+  return { id, categoryIndex, itemIndex, price: Number.parseInt(english[1], 10), image: itemImages[(categoryIndex + itemIndex) % itemImages.length] };
+}
+
+function productLabel(product) {
+  return menu[product.categoryIndex][language].items[product.itemIndex][0];
+}
+
+function loadCart() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(restaurantConfig.storageKey) || "[]");
+    return Array.isArray(saved) ? saved.filter((item) => getProductById(item.id) && Number.isInteger(item.quantity) && item.quantity > 0) : [];
+  } catch { return []; }
+}
+
+function saveCart() {
+  localStorage.setItem(restaurantConfig.storageKey, JSON.stringify(cart));
+}
+
+function calculateTotal() {
+  return cart.reduce((total, item) => {
+    const product = getProductById(item.id);
+    return total + (product ? product.price * item.quantity : 0);
+  }, 0);
+}
+
+function formatPrice(price) {
+  return price + " " + restaurantConfig.currency;
+}
+
+function addToCart(id) {
+  const product = getProductById(id);
+  if (!product) return;
+  const current = cart.find((item) => item.id === id);
+  if (current) current.quantity += 1;
+  else cart.push({ id, quantity: 1 });
+  saveCart();
+  renderCart();
+}
+
+function removeFromCart(id) {
+  cart = cart.filter((item) => item.id !== id);
+  saveCart();
+  renderCart();
+}
+
+function increaseQuantity(id) {
+  const item = cart.find((entry) => entry.id === id);
+  if (item) { item.quantity += 1; saveCart(); renderCart(); }
+}
+
+function decreaseQuantity(id) {
+  const item = cart.find((entry) => entry.id === id);
+  if (!item) return;
+  if (item.quantity === 1) removeFromCart(id);
+  else { item.quantity -= 1; saveCart(); renderCart(); }
+}
+
+function renderCart() {
+  const text = cartCopy();
+  const cartItems = document.querySelector("#cart-items");
+  cartItems.innerHTML = cart.length ? cart.map((item) => {
+    const product = getProductById(item.id);
+    return '<article class="cart-item"><img src="' + product.image + '" alt="" /><div class="cart-item-details"><strong>' + productLabel(product) + '</strong><span>' + formatPrice(product.price) + '</span><div class="quantity-controls"><button type="button" data-cart-action="decrease" data-product-id="' + item.id + '" aria-label="Decrease quantity">−</button><b>' + item.quantity + '</b><button type="button" data-cart-action="increase" data-product-id="' + item.id + '" aria-label="Increase quantity">+</button><button type="button" class="remove-item" data-cart-action="remove" data-product-id="' + item.id + '">' + text.remove + '</button></div></div><strong>' + formatPrice(product.price * item.quantity) + '</strong></article>';
+  }).join("") : '<p class="empty-cart">' + text.empty + '</p>';
+  document.querySelector("#cart-total").textContent = formatPrice(calculateTotal());
+  document.querySelector("#subtotal-label").textContent = text.subtotal;
+  document.querySelector("#cart-title").textContent = text.cart;
+  document.querySelector("#checkout-button").textContent = text.checkout;
+  document.querySelector("#checkout-button").disabled = cart.length === 0;
+  const count = cart.reduce((total, item) => total + item.quantity, 0);
+  const badge = document.querySelector("#cart-badge");
+  badge.textContent = count;
+  badge.hidden = count === 0;
+}
+
+function updateCartInterface() {
+  renderCart();
+  updateCheckoutInterface();
+}
+
+function openCart() {
+  renderCart();
+  cartLayer.classList.add("is-open");
+  cartLayer.setAttribute("aria-hidden", "false");
+}
+
+function closeCart() {
+  cartLayer.classList.remove("is-open");
+  cartLayer.setAttribute("aria-hidden", "true");
+}
+
+function openCheckout() {
+  if (!cart.length) return;
+  closeCart();
+  updateCheckoutInterface();
+  checkoutLayer.classList.add("is-open");
+  checkoutLayer.setAttribute("aria-hidden", "false");
+}
+
+function closeCheckout() {
+  checkoutLayer.classList.remove("is-open");
+  checkoutLayer.setAttribute("aria-hidden", "true");
+}
+
+function updateCheckoutInterface() {
+  const text = cartCopy();
+  const fields = restaurantConfig.fields;
+  const labels = { customerName: "customer", tableNumber: "table", orderType: "orderType", notes: "notes" };
+  Object.keys(labels).forEach((field) => {
+    const control = document.querySelector('[name="' + field + '"]');
+    const wrapper = document.querySelector("#" + field.replace("Name", "").replace("Number", "") + "-field");
+    if (control) control.required = fields[field].required;
+    if (wrapper) wrapper.hidden = fields[field].hidden === true;
+  });
+  document.querySelector("#cart-title").textContent = text.cart;
+  document.querySelector("#checkout-title").textContent = text.complete;
+  document.querySelector("#customer-label").textContent = text.customer;
+  document.querySelector("#table-label").textContent = text.table;
+  document.querySelector("#order-type-label").textContent = text.orderType;
+  document.querySelector("#notes-label").textContent = text.notes;
+  document.querySelector('[name="orderType"] option[value="dineIn"]').textContent = text.dineIn;
+  document.querySelector('[name="orderType"] option[value="takeaway"]').textContent = text.takeaway;
+  document.querySelector("#summary-title").textContent = text.summary;
+  document.querySelector("#total-label").textContent = text.total;
+  document.querySelector("#confirm-button").textContent = text.confirm;
+  document.querySelector("#summary-items").innerHTML = cart.map((item) => {
+    const product = getProductById(item.id);
+    return '<div class="summary-line"><span>' + item.quantity + ' × ' + productLabel(product) + '</span><strong>' + formatPrice(product.price * item.quantity) + '</strong></div>';
+  }).join("");
+  document.querySelector("#summary-total").textContent = formatPrice(calculateTotal());
+}
+
+function generateWhatsAppMessage(formData) {
+  const text = cartCopy();
+  const orderLines = cart.map((item) => {
+    const product = getProductById(item.id);
+    return item.quantity + "x " + productLabel(product) + " — " + formatPrice(product.price * item.quantity);
+  }).join("\\n");
+  const details = [
+    "New Order – " + restaurantConfig.name,
+    "",
+    text.customer + ": " + (formData.customerName || "-"),
+    text.table + ": " + (formData.tableNumber || "-"),
+    text.orderType + ": " + (formData.orderType === "takeaway" ? text.takeaway : text.dineIn),
+    "",
+    "Order:",
+    orderLines,
+    "",
+    text.notes + ":",
+    formData.notes || "-",
+    "",
+    text.total + ": " + formatPrice(calculateTotal())
+  ];
+  return details.join("\\n");
+}
+
+function submitOrder(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = Object.fromEntries(new FormData(form));
+  const visibleRequired = Object.entries(restaurantConfig.fields).filter(([key, setting]) => setting.required && !setting.hidden);
+  const error = document.querySelector("#form-error");
+  if (visibleRequired.some(([key]) => !String(data[key] || "").trim())) {
+    error.textContent = cartCopy().required;
+    return;
+  }
+  error.textContent = "";
+  const url = "https://wa.me/" + restaurantConfig.whatsapp + "?text=" + encodeURIComponent(generateWhatsAppMessage(data));
+  window.open(url, "_blank", "noopener");
+  cart = [];
+  saveCart();
+  form.reset();
+  closeCheckout();
+  renderCart();
+}
+
+book.addEventListener("click", (event) => {
+  const button = event.target.closest(".add-to-cart");
+  if (button) addToCart(button.dataset.productId);
+});
+document.querySelector("#cart-toggle").addEventListener("click", openCart);
+document.querySelectorAll("[data-cart-close]").forEach((element) => element.addEventListener("click", closeCart));
+document.querySelectorAll("[data-checkout-close]").forEach((element) => element.addEventListener("click", closeCheckout));
+document.querySelector("#checkout-button").addEventListener("click", openCheckout);
+document.querySelector("#cart-items").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-cart-action]");
+  if (!button) return;
+  const id = button.dataset.productId;
+  if (button.dataset.cartAction === "increase") increaseQuantity(id);
+  if (button.dataset.cartAction === "decrease") decreaseQuantity(id);
+  if (button.dataset.cartAction === "remove") removeFromCart(id);
+});
+document.querySelector("#checkout-form").addEventListener("submit", submitOrder);
 document.querySelector("#copyright-year").textContent = new Date().getFullYear();
 render();
+renderCart();
