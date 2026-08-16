@@ -4,6 +4,7 @@ const restaurantConfig = {
   whatsapp: "201026779104",
   currency: "EGP",
   storageKey: "possible-coffee-cart",
+  orderSequenceKey: "possible-coffee-order-sequence",
   fields: { customerName: { required: true }, tableNumber: { required: true }, orderType: { required: true }, notes: { required: false } }
 };
 
@@ -101,7 +102,7 @@ const compactView = window.matchMedia("(max-width: 680px)");
 
 function pageMarkup(category, number) {
   const data = category[language];
-  return '<p class="category-number">' + String(number).padStart(2, "0") + '</p><h2 class="category-title">' + data.title + '</h2><div class="items">' + data.items.map(([name, price, description], itemIndex) => { const id = "menu-" + number + "-" + (itemIndex + 1); const quantity = cartQuantity(id); return '<div class="item" style="--item-image:url(' + itemImages[(number + itemIndex - 1) % itemImages.length] + ')"><strong class="item-name">' + name + '</strong><span class="item-price">' + price + '</span><p class="item-description">' + description + '</p><div class="product-controls" data-product-controls data-product-id="' + id + '"><button type="button" data-product-action="decrease" data-product-id="' + id + '" aria-label="Decrease quantity"' + (quantity === 0 ? ' disabled' : '') + '>&minus;</button><b data-product-quantity>' + quantity + '</b><button type="button" data-product-action="increase" data-product-id="' + id + '" aria-label="Add to cart">+</button></div></div>'; }).join("") + '</div>';
+  return '<p class="category-number">' + String(number).padStart(2, "0") + '</p><h2 class="category-title">' + data.title + '</h2><div class="items">' + data.items.map(([name, price, description], itemIndex) => { const id = "menu-" + number + "-" + (itemIndex + 1); const quantity = selectedQuantity(id); return '<div class="item" style="--item-image:url(' + itemImages[(number + itemIndex - 1) % itemImages.length] + ')"><strong class="item-name">' + name + '</strong><span class="item-price">' + price + '</span><p class="item-description">' + description + '</p><div class="product-actions"><div class="product-controls" data-product-controls data-product-id="' + id + '"><button type="button" data-product-action="decrease" data-product-id="' + id + '" aria-label="Decrease quantity"' + (quantity === 1 ? ' disabled' : '') + '>&minus;</button><b data-product-quantity>' + quantity + '</b><button type="button" data-product-action="increase" data-product-id="' + id + '" aria-label="Increase quantity">+</button></div><button type="button" class="add-to-cart" data-product-action="add" data-product-id="' + id + '">' + cartCopy().add + '</button></div></div>'; }).join("") + '</div>';
 }
 
 function render(animation = "") {
@@ -185,6 +186,7 @@ compactView.addEventListener("change", () => { spread = 0; render(); });
 
 // Cart and ordering are deliberately frontend-only, so this works on GitHub Pages.
 let cart = loadCart();
+const productSelections = {};
 const cartLayer = document.querySelector("#cart-layer");
 const checkoutLayer = document.querySelector("#checkout-layer");
 
@@ -235,20 +237,26 @@ function cartQuantity(id) {
   return item ? item.quantity : 0;
 }
 
+function selectedQuantity(id) {
+  return productSelections[id] || 1;
+}
+
 function updateProductControls() {
   document.querySelectorAll("[data-product-controls]").forEach((controls) => {
-    const quantity = cartQuantity(controls.dataset.productId);
+    const quantity = selectedQuantity(controls.dataset.productId);
     controls.querySelector("[data-product-quantity]").textContent = quantity;
-    controls.querySelector('[data-product-action="decrease"]').disabled = quantity === 0;
+    controls.querySelector('[data-product-action="decrease"]').disabled = quantity === 1;
   });
 }
 
 function addToCart(id) {
   const product = getProductById(id);
   if (!product) return;
+  const quantity = selectedQuantity(id);
   const current = cart.find((item) => item.id === id);
-  if (current) current.quantity += 1;
-  else cart.push({ id, quantity: 1 });
+  if (current) current.quantity += quantity;
+  else cart.push({ id, quantity });
+  productSelections[id] = 1;
   saveCart();
   renderCart();
 }
@@ -269,6 +277,11 @@ function decreaseQuantity(id) {
   if (!item) return;
   if (item.quantity === 1) removeFromCart(id);
   else { item.quantity -= 1; saveCart(); renderCart(); }
+}
+
+function changeSelectedQuantity(id, amount) {
+  productSelections[id] = Math.max(1, selectedQuantity(id) + amount);
+  updateProductControls();
 }
 
 function renderCart() {
@@ -340,6 +353,7 @@ function updateCheckoutInterface() {
   document.querySelector("#summary-title").textContent = text.summary;
   document.querySelector("#total-label").textContent = text.total;
   document.querySelector("#confirm-button").textContent = text.confirm;
+  document.querySelector("#checkout-order-id").textContent = "Order ID: " + nextOrderId();
   document.querySelector("#summary-items").innerHTML = cart.map((item) => {
     const product = getProductById(item.id);
     return '<div class="summary-line"><span>' + item.quantity + ' × ' + productLabel(product) + '</span><strong>' + formatPrice(product.price * item.quantity) + '</strong></div>';
@@ -347,7 +361,22 @@ function updateCheckoutInterface() {
   document.querySelector("#summary-total").textContent = formatPrice(calculateTotal());
 }
 
-function generateWhatsAppMessage(formData) {
+function nextOrderId() {
+  const today = new Date();
+  const dateKey = today.getFullYear() + "-" + (today.getMonth() + 1) + "-" + today.getDate();
+  let sequence = { date: dateKey, number: 0 };
+  try { sequence = JSON.parse(localStorage.getItem(restaurantConfig.orderSequenceKey)) || sequence; } catch {}
+  const number = sequence.date === dateKey ? sequence.number + 1 : 1;
+  return "PZ-" + today.getDate() + "-" + (today.getMonth() + 1) + "/" + String(number).padStart(4, "0");
+}
+
+function saveOrderId(orderId) {
+  const today = new Date();
+  const dateKey = today.getFullYear() + "-" + (today.getMonth() + 1) + "-" + today.getDate();
+  localStorage.setItem(restaurantConfig.orderSequenceKey, JSON.stringify({ date: dateKey, number: Number(orderId.split("/")[1]) }));
+}
+
+function generateWhatsAppMessage(formData, orderId) {
   const text = cartCopy();
   const orderLines = cart.map((item) => {
     const product = getProductById(item.id);
@@ -355,6 +384,7 @@ function generateWhatsAppMessage(formData) {
   }).join("\n");
   const details = [
     "New Order – " + restaurantConfig.name,
+    "Order ID: " + orderId,
     "",
     text.customer + ": " + (formData.customerName || "-"),
     text.table + ": " + (formData.tableNumber || "-"),
@@ -382,7 +412,9 @@ function submitOrder(event) {
     return;
   }
   error.textContent = "";
-  const url = "https://wa.me/" + restaurantConfig.whatsapp + "?text=" + encodeURIComponent(generateWhatsAppMessage(data));
+  const orderId = nextOrderId();
+  saveOrderId(orderId);
+  const url = "https://wa.me/" + restaurantConfig.whatsapp + "?text=" + encodeURIComponent(generateWhatsAppMessage(data, orderId));
   window.open(url, "_blank", "noopener");
   cart = [];
   saveCart();
@@ -395,8 +427,9 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-product-action]");
   if (!button) return;
   event.preventDefault();
-  if (button.dataset.productAction === "increase") addToCart(button.dataset.productId);
-  if (button.dataset.productAction === "decrease") decreaseQuantity(button.dataset.productId);
+  if (button.dataset.productAction === "increase") changeSelectedQuantity(button.dataset.productId, 1);
+  if (button.dataset.productAction === "decrease") changeSelectedQuantity(button.dataset.productId, -1);
+  if (button.dataset.productAction === "add") addToCart(button.dataset.productId);
 });
 document.querySelector("#cart-toggle").addEventListener("click", openCart);
 document.querySelectorAll("[data-cart-close]").forEach((element) => element.addEventListener("click", closeCart));
