@@ -43,7 +43,7 @@ body.dark { --ink:#edf7f4;--muted:#a4bab5;--paper:#102724;--line:#31534d;--body:
 html[dir="rtl"] .cart-layer{justify-items:start}html[dir="rtl"] .cart-drawer{transform:translateX(-100%)}html[dir="rtl"] .is-open .cart-drawer{transform:translateX(0)}
 @media(max-width:680px){.cart-toggle{width:43px;height:43px}.cart-drawer{width:min(100%,430px)}.checkout-layer{align-items:end;padding:0}.checkout-modal{width:100%;max-height:92vh;border-radius:15px 15px 0 0}.drawer-header{padding:18px}.checkout-fields{grid-template-columns:1fr;padding:18px}.checkout-fields label:last-child{grid-column:auto}.order-summary{margin:0 18px}.confirm-button{width:calc(100% - 36px);margin:18px}.form-error{margin:0 18px}.add-to-cart{padding:6px 8px;font-size:.63rem}}
 
-/* Let the entire cart drawer use the browser's normal page-style scroll. */
-.cart-layer{overflow-y:auto;-webkit-overflow-scrolling:touch}
-.cart-drawer{align-self:start;height:auto;min-height:100dvh;max-height:none}
-.cart-items{flex:none;min-height:auto;overflow:visible}
+/* Keep the cart fixed to the viewport; only its product list scrolls. */
+.cart-layer{overflow:hidden}
+.cart-drawer{height:100dvh;min-height:0;max-height:100dvh}
+.cart-items{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
